@@ -1,9 +1,24 @@
 'use client';
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Tasks() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [title, setTitle] = useState("");
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const json = localStorage.getItem('tasks');
+    if (json) {
+      setTasks(JSON.parse(json));
+    }
+    setLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (loaded) {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+  }, [tasks, loaded]);
   
   const createTask = () => {
     const lastId = tasks.reduce((maxId, task: any) => task.id > maxId ? task.id : maxId, 0)
@@ -26,8 +41,6 @@ export default function Tasks() {
     
     setTasks(ts => [...ts, newTask]);
   };
-
-  const deleteId = (id: number) => setTasks(ts => ts.filter(t => t.id != id));
   
   return (
     <div>
@@ -49,7 +62,12 @@ export default function Tasks() {
         </button>
       </div>
       <ul className="space-y-3">
-        {tasks.map((task) => (<Task key={task.id} task={task} deleter={deleteId} />))}
+        {tasks.map((task) => {
+	  return <Task
+		   key={task.id}
+		   task={task}
+		   deleter={() => setTasks(ts => ts.filter(t => t.id != task.id))} />;
+	})}
       </ul>
     </div>
   );
@@ -57,7 +75,7 @@ export default function Tasks() {
 
 function Task(props: any) {
   const task = props.task;
-  const deleteOwnTask = () => props.deleter(task.id);
+  const deleteOwnTask = props.deleter;
   
   return (
     <li
